@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="../css/reset.css">
+    <title>그림판</title>
+    <link rel="stylesheet" href="./css/reset.css">
     <style>
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden ;
+        }
+
         #container{
             width: 100%;
             display: flex;
@@ -53,6 +59,7 @@
 
         #toolBar div input {
             color: #000;
+            width: 100px;
         }
     </style>
 </head>
@@ -63,15 +70,20 @@
                 <label for="strokeColor">색상 :</label>
                 <input type="color" id="strokeColor" value="#000"/>
 
-                <label for="lineWithd">선굵기 :</label>
-                <input type="number" id="lineWithd" value="5" min="1" max="50"/>
+                <label for="lineWidth">선굵기 :</label>
+                <input type="number" id="lineWidth" value="2" min="1" max="50"/>
             </div>
             <div>
                 <label for="bgColor">배경색상 :</label>
                 <input type="color" id="bgColor" value="#000"/>
 
-                <button id="reset">지우기</button>
-                <button id="reset">이미지 다운로드</button>
+                <button id="undo">되돌리기</button>
+                <button id="reset">모두 지우기</button>
+                <!-- 
+                a 태그 기능
+                <a herf="img/abcd.jpg download"> 다운로드 할 수 있음
+                 -->
+                <button id="downfile">이미지 다운로드</button>
             </div>
         </div>
         <canvas id="canvas"></canvas>
@@ -80,6 +92,7 @@
     <script>
         const canvas = document.querySelector("canvas")
         const toolBar = document.getElementById("toolBar")
+        let history = []
 
         canvas.width = window.innerWidth
         canvas.height = window.innerHeight - toolBar.offsetHeight;
@@ -91,7 +104,7 @@
 
         let startX;
         let startY;
-        let lineWithd = 2
+        let lineWidth  = 2
 
         const ctx = canvas.getContext("2d")
 
@@ -101,25 +114,37 @@
                 ctx.strokeStyle = e.target.value;
             }
 
-            if(e.target.id === "lineWithd"){
-                lineWithd = e.target.value
+            if(e.target.id === "lineWidth"){
+                lineWidth = e.target.value
             }
 
             if(e.target.id === "bgColor"){
                 canvas.style.backgroundColor = e.target.value
             }
-            
+        })
+
+        toolBar.addEventListener("click", function(e){
+            if(e.target.id === "downfile"){
+                let link = document.createElement("a")
+                link.download = 'drawing.png' //다운로드 될 파일이름
+                link.href = canvas.toDataURL("image/png")
+                link.click()
+            }
         })
 
         canvas.addEventListener("mousedown", function(e){
+            history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+
             isDrawing = true;
             startX = e.clientX
             startY = e.clientY
+
+            ctx.moveTo(e.clientX,e.clientY - canvasOffsetY);
         })
 
         canvas.addEventListener("mousemove", function(e){
             if(!isDrawing) return
-            ctx.lineWidth = lineWithd
+            ctx.lineWidth = lineWidth
             ctx.lineCap = "round" 
             ctx.lineTo(e.clientX , e.clientY - canvasOffsetY)
             ctx.stroke()
@@ -132,8 +157,17 @@
         })
 
         toolBar.addEventListener("click",function(e){
+            if(e.target.id === "undo"){
+                if(history.length > 0){
+                    const previousState = history.pop()
+                    ctx.putImageData(previousState, 0, 0)
+                }
+            }
+
+
             if(e.target.id === "reset"){
                 ctx.clearRect(0,0,canvas.width,canvas.height)
+                history = []
             }
         })
 
